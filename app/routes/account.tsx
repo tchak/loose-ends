@@ -29,15 +29,18 @@ export default function AccountRoute() {
     <div role="main">
       <h1 className="py-6">Account</h1>
       <div className="mb-6">Hello {user.name}!</div>
-      <div className="flex flex-row">
-        <Link to="/todos" className="block doodle-border">
+      <div className="flex flex-col md:flex-row w-56">
+        <Link to="/todos" className="block text-center doodle-border">
           Todos
         </Link>
-        <Link to="/signout" className="block ml-3 doodle-border">
+        <Link
+          to="/signout"
+          className="block mt-3 md:mt-0 md:ml-3 text-center doodle-border"
+        >
           {nbsp('Sign Out')}
         </Link>
         <form method="post">
-          <button type="submit" className="block ml-3">
+          <button type="submit" className="block md:mt-0 mt-3 md:ml-3 w-full">
             {nbsp('Delete Account')}
           </button>
         </form>
