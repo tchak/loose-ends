@@ -3,7 +3,7 @@ import { createClient, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { notFound, unprocessableEntity, badRequest } from 'remix-utils';
 import { json, redirect } from 'remix';
 
-import { now, isToday } from '~/utils';
+import { now, isToday, startOfDay } from '~/utils';
 
 if (!process.env.SUPABASE_URL) {
   throw new Error('Missing SUPABASE_URL env');
@@ -171,6 +171,7 @@ export async function getTodos({ userId }: { userId: string }): Promise<{
     .from<TodoDTO>('todos')
     .select('id,title,created_at,checked_at,pinned_at')
     .eq('user_id', userId)
+    .or(`checked_at.gte.${startOfDay()},checked_at.is.null`)
     .order('created_at');
 
   if (todos) {
