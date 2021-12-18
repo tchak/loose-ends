@@ -7,7 +7,7 @@ module.exports = {
   publicPath: '/build/',
   serverModuleFormat: 'cjs',
   serverPlatform: 'node',
-  serverBuildDirectory: 'build',
+  serverBuildDirectory: 'netlify/functions/server/build',
   devServerBroadcastDelay: 1000,
   ignoredRouteFiles: ['.*'],
 };
