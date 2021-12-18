@@ -182,6 +182,10 @@ function Layout({
           {account ? (
             <>
               {' | '}
+              <Link to="/stats" className="underline">
+                Stats
+              </Link>
+              {' | '}
               <Link to="/account" className="underline">
                 Account
               </Link>

@@ -119,7 +119,6 @@
 }
 
 .doodle button, .doodle textarea, .doodle input, .doodle select {
-  background-color: unset;
   font-family: 'Short Stack', cursive;
   font-size: 1em;
   color: #3c3c3c;

@@ -3,7 +3,7 @@ import { createClient, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { notFound, unprocessableEntity, badRequest } from 'remix-utils';
 import { json, redirect } from 'remix';
 
-import { now, isToday, startOfDay } from '~/utils';
+import { now, isToday, startOfDay, isPresent } from '~/utils';
 
 if (!process.env.SUPABASE_URL) {
   throw new Error('Missing SUPABASE_URL env');
@@ -182,6 +182,56 @@ export async function getTodos({ userId }: { userId: string }): Promise<{
     };
   }
   return { todos: [], looseEnds: [] };
+}
+
+export type Stats = {
+  stats: { done: number; focused: string; scope: 'overall' | 'today' };
+  done: { scope: 'week' | 'month' | 'year' };
+  focused: { scope: 'week' | 'month' | 'year' };
+};
+
+export async function getStats({
+  userId,
+  scopes,
+}: {
+  userId: string;
+  scopes: {
+    stats: Stats['stats']['scope'];
+    done: Stats['done']['scope'];
+    focused: Stats['focused']['scope'];
+  };
+}): Promise<Stats> {
+  const { data: tasks } = await supabase
+    .from<TodoDTO>('todos')
+    .select('checked_at')
+    .eq('user_id', userId)
+    .not('checked_at', 'is', null);
+
+  if (tasks) {
+    const doneDates = tasks
+      .map(({ checked_at }) => checked_at)
+      .filter(isPresent)
+      .map((checkedAt) => ({ checkedAt }));
+
+    return {
+      stats: {
+        done: doneDates.length,
+        focused: 'PT0H00M',
+        scope: scopes.stats,
+      },
+      done: {
+        scope: scopes.done,
+      },
+      focused: {
+        scope: scopes.focused,
+      },
+    };
+  }
+  return {
+    stats: { done: 0, focused: 'PT0H00M', scope: 'overall' },
+    done: { scope: 'week' },
+    focused: { scope: 'week' },
+  };
 }
 
 function handleSingleError(
