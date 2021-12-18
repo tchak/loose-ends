@@ -11,6 +11,7 @@ export const Todo = z.object({
   id: z.string().uuid(),
   title: z.string(),
   checked: z.boolean(),
+  createdAt: z.string(),
 });
 export type Todo = z.infer<typeof Todo>;
 

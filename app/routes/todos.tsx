@@ -38,6 +38,7 @@ import {
   cursorAtEnd,
   todayDate,
   isPresent,
+  formatTimeAgo,
 } from '~/utils';
 import { authenticator } from '~/auth.server';
 
@@ -85,7 +86,7 @@ export default function TodosRoute() {
       <div className="flex items-center px-0 py-6">
         <h1 className="flex-grow">
           <span className="font-medium">{nbsp('Plan your day')}</span>{' '}
-          <span className="text-sm text-gray-500">{nbsp(todayDate())}</span>
+          <span className="text-sm">{nbsp(todayDate())}</span>
         </h1>
 
         <div className="flex items-center">
@@ -139,6 +140,7 @@ const TodoItem = memo(
     id,
     title,
     checked,
+    createdAt,
     onCreate,
     isEditing,
     setEditing,
@@ -222,6 +224,14 @@ const TodoItem = memo(
               onDoubleClick={() => setEditing(true)}
             >
               {title}
+              {!onCreate ? (
+                <>
+                  {' '}
+                  <span className="text-xs">
+                    {nbsp(formatTimeAgo(createdAt))}
+                  </span>
+                </>
+              ) : null}
             </label>
           )}
         </div>

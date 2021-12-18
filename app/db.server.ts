@@ -83,6 +83,7 @@ function toJSON(todo: TodoDTO): Todo {
     id: todo.id,
     title: todo.title,
     checked: todo.checked_at != null,
+    createdAt: todo.created_at,
   };
 }
 
@@ -172,7 +173,7 @@ export async function getTodos({ userId }: { userId: string }): Promise<{
     .select('id,title,created_at,checked_at,pinned_at')
     .eq('user_id', userId)
     .or(`checked_at.gte.${startOfDay()},checked_at.is.null`)
-    .order('created_at');
+    .order('created_at', { ascending: true });
 
   if (todos) {
     return {
