@@ -101,7 +101,7 @@ export default function TodosRoute() {
       </div>
 
       {isPresent(todos) ? (
-        <ul role="list" className="doodle-border">
+        <ul role="list" className="doodle-border text-base md:text-xl">
           {todos.map((todo) => (
             <TodoItem
               key={todo.id}
@@ -123,7 +123,7 @@ export default function TodosRoute() {
             <div className="flex items-center h-10"></div>
           </div>
 
-          <ul role="list" className="doodle-border">
+          <ul role="list" className="doodle-border text-base md:text-xl">
             {looseEnds.map((todo) => (
               <TodoItem key={todo.id} {...editable(todo.id)} {...todo} />
             ))}
@@ -175,7 +175,7 @@ const TodoItem = memo(
     return (
       <li
         className={classNames(
-          'relative flex items-center px-4 py-4',
+          'relative flex items-center px-4 py-2 md:py-4',
           isDeleted ? 'hidden' : ''
         )}
       >
