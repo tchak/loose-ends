@@ -45,12 +45,12 @@ function local(zone = 'Europe/Paris') {
   return DateTime.local({ zone });
 }
 
-export function startOfDay(zone?: string) {
-  return local(zone).startOf('day').toISO();
+export function getZone() {
+  return DateTime.local().zoneName;
 }
 
-export function endOfDay(zone?: string) {
-  return local(zone).endOf('day').toISO();
+export function startOfDay(zone?: string) {
+  return local(zone).startOf('day').toISO();
 }
 
 export function isToday(date: string, zone?: string) {
