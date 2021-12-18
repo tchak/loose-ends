@@ -2,7 +2,6 @@ import type { LoaderFunction, ActionFunction, MetaFunction } from 'remix';
 import { useLoaderData, useFetcher } from 'remix';
 import {
   useEffect,
-  Fragment,
   useState,
   useRef,
   ReactNode,
@@ -16,8 +15,8 @@ import {
   PlusIcon,
   StarIcon,
 } from '@heroicons/react/solid';
-import { Menu, Transition } from '@headlessui/react';
 import { useDebouncedCallback } from 'use-debounce';
+import { Menu, MenuButton, MenuList, MenuItem } from '@reach/menu-button';
 
 import type { Todo, CommandData, CommandError, CommandResult } from '~/types';
 import {
@@ -96,7 +95,7 @@ export default function TodosRoute() {
             onClick={onCreate}
           >
             <PlusIcon className="h-5 w-5" aria-hidden="true" />
-            <span className="sr-only">Add New Todo</span>
+            <span className="sr-only">Add New Task</span>
           </button>
         </div>
       </div>
@@ -104,7 +103,7 @@ export default function TodosRoute() {
       {isPresent(todos) ? (
         <ul role="list" className="doodle-border text-base md:text-xl">
           {todos.map((todo) => (
-            <TodoItem
+            <TaskItem
               key={todo.id}
               onCreate={onCreate}
               {...editable(todo.id)}
@@ -126,7 +125,7 @@ export default function TodosRoute() {
 
           <ul role="list" className="doodle-border text-base md:text-xl">
             {looseEnds.map((todo) => (
-              <TodoItem key={todo.id} {...editable(todo.id)} {...todo} />
+              <TaskItem key={todo.id} {...editable(todo.id)} {...todo} />
             ))}
           </ul>
         </>
@@ -135,7 +134,7 @@ export default function TodosRoute() {
   );
 }
 
-const TodoItem = memo(
+const TaskItem = memo(
   ({
     id,
     title,
@@ -168,9 +167,9 @@ const TodoItem = memo(
 
     useEffect(() => {
       if (isEditing) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           focusRef.current?.focus();
-        }, 50);
+        });
       }
     }, [isEditing]);
 
@@ -189,7 +188,7 @@ const TodoItem = memo(
             onChange={({ currentTarget: { checked } }) =>
               onToggleChecked(checked)
             }
-            aria-label={title || 'New todo item'}
+            aria-label={title || 'A new task'}
           />
         </div>
         <div className="ml-3 flex flex-grow items-center h-10">
@@ -236,7 +235,8 @@ const TodoItem = memo(
           )}
         </div>
         <div className="ml-3 flex items-center">
-          <TodoMenu
+          <TaskMenu
+            id={id}
             onDelete={onDelete}
             onEdit={onEdit}
             onPin={onCreate ? undefined : onPin}
@@ -280,66 +280,7 @@ function useCommand(options?: {
   return { fetcher, command };
 }
 
-function TodoMenu({
-  onDelete,
-  onEdit,
-  onPin,
-}: {
-  onDelete: () => void;
-  onEdit: () => void;
-  onPin?: () => void;
-}) {
-  return (
-    <Menu as="div" className="relative inline-block">
-      <div>
-        <Menu.Button className="inline-flex justify-center w-full rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500">
-          <DotsVerticalIcon className="h-5 w-5" aria-hidden="true" />
-          <span className="sr-only">Menu</span>
-        </Menu.Button>
-      </div>
-
-      <Transition
-        as={Fragment}
-        enter="transition ease-out duration-100"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
-      >
-        <Menu.Items className="origin-top-right absolute z-10 right-0 mt-2 w-40 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none doodle">
-          <div className="py-1">
-            <MenuItem onClick={onEdit}>
-              <PencilAltIcon
-                className="mr-3 h-5 w-5 group-hover:text-gray-500"
-                aria-hidden="true"
-              />
-              Edit
-            </MenuItem>
-            {onPin ? (
-              <MenuItem onClick={onPin}>
-                <StarIcon
-                  className="mr-3 h-5 w-5 group-hover:text-gray-500"
-                  aria-hidden="true"
-                />
-                Pin
-              </MenuItem>
-            ) : null}
-            <MenuItem onClick={onDelete}>
-              <TrashIcon
-                className="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500"
-                aria-hidden="true"
-              />
-              Delete
-            </MenuItem>
-          </div>
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  );
-}
-
-function MenuItem({
+function TaskMenuItem({
   children,
   onClick,
 }: {
@@ -347,19 +288,63 @@ function MenuItem({
   onClick: () => void;
 }) {
   return (
-    <Menu.Item>
-      {({ active }) => (
-        <button
-          type="button"
-          className={classNames(
-            active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-            'group flex items-center p-1 w-full'
-          )}
-          onClick={onClick}
-        >
-          {children}
-        </button>
-      )}
-    </Menu.Item>
+    <MenuItem onSelect={onClick} className="doodle rounded-md">
+      <button
+        type="button"
+        className={classNames('group flex items-center p-1 w-full')}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+    </MenuItem>
+  );
+}
+
+function TaskMenu({
+  id,
+  onDelete,
+  onEdit,
+  onPin,
+}: {
+  id: string;
+  onDelete: () => void;
+  onEdit: () => void;
+  onPin?: () => void;
+}) {
+  return (
+    <Menu>
+      <MenuButton
+        id={`menu-${id}`}
+        className="rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
+      >
+        <DotsVerticalIcon className="h-5 w-5" aria-hidden="true" />
+        <span className="sr-only">Task Menu</span>
+      </MenuButton>
+      <MenuList className="">
+        <TaskMenuItem onClick={onEdit}>
+          <PencilAltIcon
+            className="mr-3 h-5 w-5 group-hover:text-gray-500"
+            aria-hidden="true"
+          />
+          Edit
+        </TaskMenuItem>
+        {onPin ? (
+          <TaskMenuItem onClick={onPin}>
+            <StarIcon
+              className="mr-3 h-5 w-5 group-hover:text-gray-500"
+              aria-hidden="true"
+            />
+            Pin
+          </TaskMenuItem>
+        ) : null}
+        <TaskMenuItem onClick={onDelete}>
+          <TrashIcon
+            className="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500"
+            aria-hidden="true"
+          />
+          Delete
+        </TaskMenuItem>
+      </MenuList>
+    </Menu>
   );
 }

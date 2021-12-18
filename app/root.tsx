@@ -27,6 +27,10 @@ export const links: LinksFunction = () => {
       href: 'doodle/doodle.css',
     },
     {
+      rel: 'stylesheet',
+      href: 'https://unpkg.com/@reach/menu-button@0.16.2/styles.css',
+    },
+    {
       rel: 'apple-touch-icon',
       sizes: '180x180',
       href: '/apple-touch-icon.png',

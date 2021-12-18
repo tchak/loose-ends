@@ -160,3 +160,12 @@
 .doodle input[type="checkbox"]:checked:after, .doodle input[type="radio"]:checked:after {
   content: "*";
 }
+
+.doodle [data-reach-menu-list], .doodle [data-reach-menu-item] {
+  border: 0;
+  padding: 0;
+}
+
+.doodle [data-reach-menu-item][data-selected] {
+  background: #d4d1ce;
+}
