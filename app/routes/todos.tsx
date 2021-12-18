@@ -253,6 +253,7 @@ function useCommand(options?: {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.type]);
   const command = useCallback(
     (command: string, payload?: Record<string, string>) =>

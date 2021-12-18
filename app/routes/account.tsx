@@ -1,5 +1,5 @@
 import type { LoaderFunction, ActionFunction, MetaFunction } from 'remix';
-import { useLoaderData, Link, redirect } from 'remix';
+import { useLoaderData, Link } from 'remix';
 
 import { authenticator } from '~/auth.server';
 import { nbsp } from '~/utils';
