@@ -1,10 +1,10 @@
-import { createPagesFunctionHandler } from "@remix-run/cloudflare-pages";
+import { createPagesFunctionHandler } from '@remix-run/cloudflare-pages';
 
 // @ts-ignore
-import * as build from "../build";
+import * as build from '../netlify/functions/server/build';
 
 const handleRequest = createPagesFunctionHandler({
-  build
+  build,
 });
 
 export function onRequest(context) {
