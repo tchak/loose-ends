@@ -182,7 +182,7 @@ const TodoItem = memo(
         <div className="flex items-center h-10">
           <input
             type="checkbox"
-            className="rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
+            className="rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
             defaultChecked={checked}
             onChange={({ currentTarget: { checked } }) =>
               onToggleChecked(checked)
