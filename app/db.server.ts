@@ -137,7 +137,7 @@ function setTodoTitle({
 }) {
   return supabase
     .from<TodoDTO>('todos')
-    .update({ title }, { returning: 'representation' })
+    .update({ title })
     .eq('id', id)
     .eq('user_id', userId)
     .select('id')
