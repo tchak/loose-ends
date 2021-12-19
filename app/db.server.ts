@@ -3,20 +3,9 @@ import { createClient, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { notFound, unprocessableEntity, badRequest } from 'remix-utils';
 import { json, redirect } from 'remix';
 
-import { now, isToday, startOfDay, isPresent } from '~/utils';
+import { now, isToday, startOfDay, isPresent, getEnv } from '~/utils';
 
-if (!process.env.SUPABASE_URL) {
-  throw new Error('Missing SUPABASE_URL env');
-}
-
-if (!process.env.SUPABASE_KEY) {
-  throw new Error('Missing SUPABASE_KEY env');
-}
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const supabase = createClient(getEnv('SUPABASE_URL'), getEnv('SUPABASE_KEY'));
 
 import {
   TodoCreate,

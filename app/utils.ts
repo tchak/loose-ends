@@ -89,6 +89,20 @@ export function isPresent<T>(value: T | undefined | null | void): value is T {
   return true;
 }
 
+export function getEnv(name: string): string {
+  let value: string | undefined;
+  if ('process' in globalThis) {
+    value = globalThis.process.env[name];
+  } else if (name in globalThis) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value = (globalThis as any)[name];
+  }
+  if (!value) {
+    throw new Error(`Missing ${name} env`);
+  }
+  return value;
+}
+
 function local(timezone?: string) {
   return DateTime.local({ zone: timezone });
 }
@@ -106,7 +120,7 @@ const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
 function getFormatter(locale: string) {
   let formatter: Intl.RelativeTimeFormat;
   if (formatters.has(locale)) {
-    formatter = formatters.get(locale)!;
+    formatter = formatters.get(locale) as Intl.RelativeTimeFormat;
   } else {
     formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
     formatters.set(locale, formatter);

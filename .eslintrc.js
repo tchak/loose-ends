@@ -8,9 +8,7 @@ module.exports = {
     'plugin:react-hooks/recommended',
     'prettier',
   ],
-  rules: {
-    '@typescript-eslint/no-non-null-assertion': 'off',
-  },
+  rules: {},
   overrides: [
     {
       files: ['remix.config.js', 'tailwind.config.js'],
