@@ -168,8 +168,8 @@ function Layout({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto text-xl">
         {children}
-        <footer className="my-8 text-xs flex flex-col items-start md:items-center md:flex-row md:justify-between">
-          <div className="mb-3 md:mb-0">
+        <footer className="my-8 text-xs flex flex-col-reverse items-start md:items-center md:flex-row md:justify-between">
+          <div className="mt-3 md:mt-0">
             <a
               href="https://chr15m.github.io/DoodleCSS/"
               target="_blank"
