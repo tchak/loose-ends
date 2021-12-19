@@ -10,7 +10,12 @@ import {
   useLoaderData,
   useFetcher,
 } from 'remix';
-import type { LoaderFunction, LinksFunction, ThrownResponse } from 'remix';
+import type {
+  LoaderFunction,
+  LinksFunction,
+  ThrownResponse,
+  ShouldReloadFunction,
+} from 'remix';
 import { ReactNode } from 'react';
 import { timeZonesNames } from '@vvo/tzdb';
 
@@ -69,7 +74,7 @@ export const loader: LoaderFunction = async ({
   return { isAuthenticated: !!user, timezone: user?.timezone ?? getTimeZone() };
 };
 
-export const unstable_shouldReload = () => false;
+export const unstable_shouldReload: ShouldReloadFunction = () => false;
 
 export default function App() {
   const { isAuthenticated, timezone } = useLoaderData<LoaderData>();
