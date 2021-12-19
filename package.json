@@ -75,7 +75,7 @@
   "main": "dist/worker.js",
   "size-limit": [
     {
-      "path": "public/build/*.js"
+      "path": "public/build/**/*.js"
     }
   ]
 }
