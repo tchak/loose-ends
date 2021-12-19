@@ -1,7 +1,9 @@
 import { Authenticator, GitHubStrategy } from 'remix-auth';
-import { sessionStorage } from '~/session.server';
 
-type User = { id: string; name: string };
+import { sessionStorage } from '~/session.server';
+import { getTimeZone } from '~/utils';
+
+type User = { id: string; name: string; timezone: string };
 
 if (!process.env.GITHUB_CLIENT_ID) {
   throw new Error('Missing GITHUB_CLIENT_ID env');
@@ -25,7 +27,11 @@ authenticator.use(
       callbackURL: process.env.GITHUB_CALLBACK_URL!,
     },
     async (_accessToken, _refreshToken, _params, profile) => {
-      return { id: profile.id, name: profile.displayName };
+      return {
+        id: profile.id,
+        name: profile.displayName,
+        timezone: getTimeZone(),
+      };
     }
   )
 );

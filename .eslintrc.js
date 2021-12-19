@@ -11,4 +11,10 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-non-null-assertion': 'off',
   },
+  overrides: [
+    {
+      files: ['remix.config.js', 'tailwind.config.js'],
+      env: { node: true },
+    },
+  ],
 };

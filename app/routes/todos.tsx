@@ -41,7 +41,9 @@ import {
 } from '~/utils';
 import { authenticator } from '~/auth.server';
 
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({
+  request,
+}): Promise<LoaderData> => {
   const user = await authenticator.isAuthenticated(request, {
     failureRedirect: '/',
   });
@@ -58,10 +60,10 @@ export const action: ActionFunction = async ({ request }) => {
 
 export const meta: MetaFunction = () => ({ title: 'Loose Ends' });
 
-type LoaderData = { todos: Todo[]; looseEnds: Todo[] };
+type LoaderData = { todos: Todo[]; looseEnds: Todo[]; timezone?: string };
 
 export default function TodosRoute() {
-  const { todos, looseEnds } = useLoaderData<LoaderData>();
+  const { todos, looseEnds, timezone } = useLoaderData<LoaderData>();
   const [currentTodoId, setCurrentTodoId] = useState<string | null>(null);
   const editable = useCallback(
     (id: string) => ({
@@ -125,7 +127,12 @@ export default function TodosRoute() {
 
           <ul role="list" className="doodle-border text-base md:text-xl">
             {looseEnds.map((todo) => (
-              <TaskItem key={todo.id} {...editable(todo.id)} {...todo} />
+              <TaskItem
+                key={todo.id}
+                timezone={timezone}
+                {...editable(todo.id)}
+                {...todo}
+              />
             ))}
           </ul>
         </>
@@ -140,10 +147,12 @@ const TaskItem = memo(
     title,
     checked,
     createdAt,
+    timezone,
     onCreate,
     isEditing,
     setEditing,
   }: Todo & {
+    timezone?: string;
     onCreate?: () => void;
     isEditing: boolean;
     setEditing: (isEditing: boolean) => void;
@@ -227,7 +236,7 @@ const TaskItem = memo(
                 <>
                   {' '}
                   <span className="text-xs">
-                    {nbsp(formatTimeAgo(createdAt))}
+                    {nbsp(formatTimeAgo(createdAt, timezone))}
                   </span>
                 </>
               ) : null}

@@ -164,9 +164,16 @@ function deleteAccount({ userId }: { userId: string }) {
     .then(() => redirect('/signout'));
 }
 
-export async function getTodos({ userId }: { userId: string }): Promise<{
+export async function getTodos({
+  userId,
+  timezone,
+}: {
+  userId: string;
+  timezone?: string;
+}): Promise<{
   todos: Todo[];
   looseEnds: Todo[];
+  timezone?: string;
 }> {
   const { data: todos } = await supabase
     .from<TodoDTO>('todos')
@@ -177,8 +184,11 @@ export async function getTodos({ userId }: { userId: string }): Promise<{
 
   if (todos) {
     return {
-      todos: todos.filter(isRelevantToday).map(toJSON),
-      looseEnds: todos.filter(isLooseEnd).map(toJSON),
+      todos: todos
+        .filter((task) => isRelevantToday(task, timezone))
+        .map(toJSON),
+      looseEnds: todos.filter((task) => isLooseEnd(task, timezone)).map(toJSON),
+      timezone,
     };
   }
   return { todos: [], looseEnds: [] };
@@ -287,21 +297,24 @@ export async function executeCommand(
   });
 }
 
-function isRelevantToday(todo: TodoDTO): boolean {
+function isRelevantToday(todo: TodoDTO, timezone?: string): boolean {
   return (
-    isToday(todo.created_at) ||
-    (isPinned(todo) && isUncheckedOrCheckedToday(todo))
+    isToday(todo.created_at, timezone) ||
+    (isPinned(todo, timezone) && isUncheckedOrCheckedToday(todo, timezone))
   );
 }
 
-function isLooseEnd(todo: TodoDTO): boolean {
-  return !isRelevantToday(todo) && isUncheckedOrCheckedToday(todo);
+function isLooseEnd(todo: TodoDTO, timezone?: string): boolean {
+  return (
+    !isRelevantToday(todo, timezone) &&
+    isUncheckedOrCheckedToday(todo, timezone)
+  );
 }
 
-function isUncheckedOrCheckedToday(todo: TodoDTO): boolean {
-  return !todo.checked_at || isToday(todo.checked_at);
+function isUncheckedOrCheckedToday(todo: TodoDTO, timezone?: string): boolean {
+  return !todo.checked_at || isToday(todo.checked_at, timezone);
 }
 
-function isPinned(todo: TodoDTO): boolean {
-  return !!todo.pinned_at && isToday(todo.pinned_at);
+function isPinned(todo: TodoDTO, timezone?: string): boolean {
+  return !!todo.pinned_at && isToday(todo.pinned_at, timezone);
 }

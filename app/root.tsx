@@ -8,12 +8,15 @@ import {
   useCatch,
   Link,
   useLoaderData,
+  useFetcher,
 } from 'remix';
 import type { LoaderFunction, LinksFunction, ThrownResponse } from 'remix';
 import { ReactNode } from 'react';
+import { timeZonesNames } from '@vvo/tzdb';
 
 import tailwindUrl from '~/styles/tailwind.css';
 import { authenticator } from '~/auth.server';
+import { getTimeZone } from '~/utils';
 
 export const links: LinksFunction = () => {
   return [
@@ -54,17 +57,24 @@ export const links: LinksFunction = () => {
   ];
 };
 
-export const loader: LoaderFunction = async ({ request }) => {
+type LoaderData = {
+  isAuthenticated: boolean;
+  timezone: string;
+};
+
+export const loader: LoaderFunction = async ({
+  request,
+}): Promise<LoaderData> => {
   const user = await authenticator.isAuthenticated(request);
-  return { account: !!user };
+  return { isAuthenticated: !!user, timezone: user?.timezone ?? getTimeZone() };
 };
 
 export const unstable_shouldReload = () => false;
 
 export default function App() {
-  const { account } = useLoaderData<{ account: boolean }>();
+  const { isAuthenticated, timezone } = useLoaderData<LoaderData>();
   return (
-    <Document account={account}>
+    <Document isAuthenticated={isAuthenticated} timezone={timezone}>
       <Outlet />
     </Document>
   );
@@ -105,11 +115,13 @@ export function CatchBoundary() {
 function Document({
   children,
   title,
-  account = false,
+  isAuthenticated = false,
+  timezone = getTimeZone(),
 }: {
   children: React.ReactNode;
   title?: string;
-  account?: boolean;
+  isAuthenticated?: boolean;
+  timezone?: string;
 }) {
   return (
     <html lang="en">
@@ -121,7 +133,9 @@ function Document({
         <Links />
       </head>
       <body className="font-body doodle">
-        <Layout account={account}>{children}</Layout>
+        <Layout isAuthenticated={isAuthenticated} timezone={timezone}>
+          {children}
+        </Layout>
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV == 'development' && <LiveReload />}
@@ -142,57 +156,87 @@ function caughtMessage(caught: ThrownResponse) {
 }
 
 function Layout({
-  account,
+  isAuthenticated,
+  timezone,
   children,
 }: {
-  account: boolean;
+  isAuthenticated: boolean;
+  timezone: string;
   children: ReactNode;
 }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto text-xl">
         {children}
-        <footer className="my-8 text-xs">
-          <a
-            href="https://chr15m.github.io/DoodleCSS/"
-            target="_blank"
-            rel="noopener"
-            className="underline"
-          >
-            CSS
-          </a>
-          {' | '}
-          <a
-            href="https://remix.run"
-            target="_blank"
-            rel="noopener"
-            className="underline"
-          >
-            JS
-          </a>
-          {' | '}
-          <a
-            href="https://supabase.com"
-            target="_blank"
-            rel="noopener"
-            className="underline"
-          >
-            DB
-          </a>
-          {account ? (
-            <>
-              {' | '}
-              <Link to="/stats" className="underline">
-                Stats
-              </Link>
-              {' | '}
-              <Link to="/account" className="underline">
-                Account
-              </Link>
-            </>
-          ) : null}
+        <footer className="my-8 text-xs flex items-center justify-between">
+          <div className="">
+            <a
+              href="https://chr15m.github.io/DoodleCSS/"
+              target="_blank"
+              rel="noopener"
+              className="underline"
+            >
+              CSS
+            </a>
+            {' | '}
+            <a
+              href="https://remix.run"
+              target="_blank"
+              rel="noopener"
+              className="underline"
+            >
+              JS
+            </a>
+            {' | '}
+            <a
+              href="https://supabase.com"
+              target="_blank"
+              rel="noopener"
+              className="underline"
+            >
+              DB
+            </a>
+            {isAuthenticated ? (
+              <>
+                {' | '}
+                <Link to="/stats" className="underline">
+                  Stats
+                </Link>
+                {' | '}
+                <Link to="/account" className="underline">
+                  Account
+                </Link>
+              </>
+            ) : null}
+          </div>
+          {isAuthenticated ? (
+            <TimezoneSelect timezone={timezone} />
+          ) : (
+            <span>{timezone}</span>
+          )}
         </footer>
       </div>
     </div>
+  );
+}
+
+function TimezoneSelect({ timezone }: { timezone: string }) {
+  const fetcher = useFetcher();
+  return (
+    <select
+      aria-label="Select preferred Timezone"
+      className="appearance-none rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
+      defaultValue={timezone}
+      onChange={({ currentTarget: { value } }) => {
+        fetcher.submit(
+          { timezone: value },
+          { action: '/account/zone', method: 'post', replace: true }
+        );
+      }}
+    >
+      {timeZonesNames.map((zoneName) => (
+        <option key={zoneName}>{zoneName}</option>
+      ))}
+    </select>
   );
 }
