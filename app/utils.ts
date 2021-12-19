@@ -38,7 +38,11 @@ export function yearsFromNow(years: number) {
 }
 
 export function getTimeZone() {
-  return DateTime.local().zoneName;
+  const timezone = DateTime.local().zoneName;
+  if (timezone == 'UTC') {
+    return 'Europe/London';
+  }
+  return timezone;
 }
 
 export function startOfDay(timezone?: string) {
