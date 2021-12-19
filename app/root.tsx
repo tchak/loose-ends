@@ -15,6 +15,7 @@ import type {
   LinksFunction,
   ThrownResponse,
   ShouldReloadFunction,
+  MetaFunction,
 } from 'remix';
 import { ReactNode } from 'react';
 import { timeZonesNames } from '@vvo/tzdb';
@@ -23,20 +24,35 @@ import tailwindUrl from '~/styles/tailwind.css';
 import { authenticator } from '~/auth.server';
 import { getTimeZone } from '~/utils';
 
+export const meta: MetaFunction = () => ({
+  'theme-color': '#FDF7F1',
+  description: 'A simple todo app',
+});
+
 export const links: LinksFunction = () => {
   return [
-    { rel: 'stylesheet', href: tailwindUrl },
+    {
+      rel: 'prefetch',
+      as: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=Short+Stack&display=swap',
+    },
+    {
+      rel: 'prefetch',
+      as: 'stylesheet',
+      href: 'https://unpkg.com/@reach/menu-button@0.16.2/styles.css',
+    },
     {
       rel: 'stylesheet',
       href: 'https://fonts.googleapis.com/css2?family=Short+Stack&display=swap',
     },
     {
       rel: 'stylesheet',
-      href: 'doodle/doodle.css',
+      href: 'https://unpkg.com/@reach/menu-button@0.16.2/styles.css',
     },
+    { rel: 'stylesheet', href: tailwindUrl },
     {
       rel: 'stylesheet',
-      href: 'https://unpkg.com/@reach/menu-button@0.16.2/styles.css',
+      href: 'doodle/doodle.css',
     },
     {
       rel: 'apple-touch-icon',
