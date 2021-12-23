@@ -170,18 +170,16 @@ export async function getTodos({
     .from<TodoDTO>('todos')
     .select('id,title,created_at,checked_at,pinned_at')
     .eq('user_id', userId)
-    .or(`checked_at.gte.${startOfDay()},checked_at.is.null`)
-    .order('created_at', { ascending: true });
+    .or(`checked_at.gte.${startOfDay()},checked_at.is.null`);
 
   if (todos) {
-    const looseEnds = todos
-      .filter((task) => isLooseEnd(task, timezone))
-      .map(toJSON);
     return {
-      todos: todos
+      todos: sortOn(todos, ['-checked_at', 'pinned_at', '-created_at'])
         .filter((task) => isRelevantToday(task, timezone))
         .map(toJSON),
-      looseEnds: sortOn(looseEnds, ['pinnedAt', '-createdAt']),
+      looseEnds: sortOn(todos, ['-checked_at', 'pinned_at', 'created_at'])
+        .filter((task) => isLooseEnd(task, timezone))
+        .map(toJSON),
       timezone,
     };
   }
