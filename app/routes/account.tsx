@@ -1,6 +1,7 @@
 import type { LoaderFunction, ActionFunction, MetaFunction } from 'remix';
 import { useLoaderData, Link } from 'remix';
 import { MenuIcon } from '@heroicons/react/solid';
+import { SkipNavContent } from '@reach/skip-nav';
 
 import { authenticator } from '~/auth.server';
 import { nbsp } from '~/utils';
@@ -32,6 +33,7 @@ export default function AccountRoute() {
         <h1 className="flex-grow font-medium">Account</h1>
 
         <div className="flex items-center">
+          <SkipNavContent />
           <Link
             to="/"
             className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"

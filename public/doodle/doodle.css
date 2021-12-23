@@ -168,3 +168,11 @@
 .doodle [data-reach-menu-item][data-selected] {
   background: #d4d1ce;
 }
+
+.doodle [data-reach-skip-link] {
+  background: #FDF7F1;
+}
+
+.doodle [data-reach-skip-link]:focus {
+  background: #FDF7F1;
+}

@@ -3,6 +3,7 @@ import { useLoaderData, useSearchParams, Link } from 'remix';
 import { Duration } from 'luxon';
 import { MenuIcon } from '@heroicons/react/solid';
 import { z } from 'zod';
+import { SkipNavContent } from '@reach/skip-nav';
 
 import { authenticator } from '~/auth.server';
 import { classNames } from '~/utils';
@@ -57,6 +58,7 @@ export default function StatsRoute() {
       </div>
 
       <div className="border my-6">
+        <SkipNavContent />
         <div className="flex justify-around">
           <figure className="text-center p-3">
             <div className="p-4">{stats.done}</div>

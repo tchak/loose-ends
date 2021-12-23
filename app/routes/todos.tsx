@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/solid';
 import { useDebouncedCallback } from 'use-debounce';
 import { Menu, MenuButton, MenuList, MenuItem } from '@reach/menu-button';
+import { SkipNavContent } from '@reach/skip-nav';
 
 import type { Todo, CommandData, CommandError, CommandResult } from '~/types';
 import {
@@ -102,6 +103,8 @@ export default function TodosRoute() {
           </button>
         </div>
       </div>
+
+      <SkipNavContent />
 
       {isPresent(todos) ? (
         <ul role="list" className="doodle-border text-base md:text-xl">
@@ -223,7 +226,10 @@ const TaskItem = memo(
                   cursorAtStart(currentTarget)
                 ) {
                   onDelete();
-                } else if (isEscapeKey(nativeEvent)) {
+                } else if (
+                  isEscapeKey(nativeEvent) ||
+                  isEnterKey(nativeEvent)
+                ) {
                   setEditing(false);
                 }
               }}

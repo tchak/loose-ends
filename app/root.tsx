@@ -19,6 +19,7 @@ import type {
 } from 'remix';
 import { ReactNode } from 'react';
 import { timeZonesNames } from '@vvo/tzdb';
+import { SkipNavLink } from '@reach/skip-nav';
 
 import tailwindUrl from '~/styles/tailwind.css';
 import { authenticator } from '~/auth.server';
@@ -32,22 +33,16 @@ export const meta: MetaFunction = () => ({
 export const links: LinksFunction = () => {
   return [
     {
-      rel: 'prefetch',
-      as: 'stylesheet',
-      href: 'https://fonts.googleapis.com/css2?family=Short+Stack&display=swap',
-    },
-    {
-      rel: 'prefetch',
-      as: 'stylesheet',
-      href: 'https://unpkg.com/@reach/menu-button@0.16.2/styles.css',
-    },
-    {
       rel: 'stylesheet',
       href: 'https://fonts.googleapis.com/css2?family=Short+Stack&display=swap',
     },
     {
       rel: 'stylesheet',
       href: 'https://unpkg.com/@reach/menu-button@0.16.2/styles.css',
+    },
+    {
+      rel: 'stylesheet',
+      href: 'https://unpkg.com/@reach/skip-nav@0.16.0/styles.css',
     },
     { rel: 'stylesheet', href: tailwindUrl },
     {
@@ -96,6 +91,7 @@ export default function App() {
   const { isAuthenticated, timezone } = useLoaderData<LoaderData>();
   return (
     <Document isAuthenticated={isAuthenticated} timezone={timezone}>
+      <SkipNavLink className="rounded-md underline shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500" />
       <Outlet />
     </Document>
   );

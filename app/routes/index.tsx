@@ -1,5 +1,6 @@
 import type { LoaderFunction, MetaFunction } from 'remix';
 import { useTransition, Form } from 'remix';
+import { SkipNavContent } from '@reach/skip-nav';
 
 import { authenticator } from '~/auth.server';
 
@@ -17,6 +18,7 @@ export default function IndexRoute() {
   return (
     <div role="main">
       <h1 className="py-6">Todos</h1>
+      <SkipNavContent />
       <Form action="/auth/github" method="post">
         <button type="submit" disabled={connecting}>
           {connecting ? 'Connecting with GitHub...' : 'Continue with GitHub'}
