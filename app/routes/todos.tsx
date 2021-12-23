@@ -36,6 +36,7 @@ import {
   cursorAtStart,
   cursorAtEnd,
   todayDate,
+  maxDate,
   isPresent,
   formatTimeAgo,
 } from '~/utils';
@@ -147,6 +148,7 @@ const TaskItem = memo(
     title,
     checked,
     createdAt,
+    pinnedAt,
     timezone,
     onCreate,
     isEditing,
@@ -236,7 +238,9 @@ const TaskItem = memo(
                 <>
                   {' '}
                   <span className="text-xs">
-                    {nbsp(formatTimeAgo(createdAt, timezone))}
+                    {nbsp(
+                      formatTimeAgo(maxDate(createdAt, pinnedAt), timezone)
+                    )}
                   </span>
                 </>
               ) : null}

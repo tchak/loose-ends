@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { createClient, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { notFound, unprocessableEntity, badRequest } from 'remix-utils';
 import { json, redirect } from 'remix';
+import sortOn from 'sort-on';
 
 import { now, isToday, startOfDay, isPresent, getEnv } from '~/utils';
 
@@ -73,6 +74,7 @@ function toJSON(todo: TodoDTO): Todo {
     title: todo.title,
     checked: todo.checked_at != null,
     createdAt: todo.created_at,
+    pinnedAt: todo.pinned_at,
   };
 }
 
@@ -172,11 +174,14 @@ export async function getTodos({
     .order('created_at', { ascending: true });
 
   if (todos) {
+    const looseEnds = todos
+      .filter((task) => isLooseEnd(task, timezone))
+      .map(toJSON);
     return {
       todos: todos
         .filter((task) => isRelevantToday(task, timezone))
         .map(toJSON),
-      looseEnds: todos.filter((task) => isLooseEnd(task, timezone)).map(toJSON),
+      looseEnds: sortOn(looseEnds, ['pinnedAt', '-createdAt']),
       timezone,
     };
   }

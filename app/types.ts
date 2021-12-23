@@ -12,6 +12,7 @@ export const Todo = z.object({
   title: z.string(),
   checked: z.boolean(),
   createdAt: z.string(),
+  pinnedAt: z.string().nullable(),
 });
 export type Todo = z.infer<typeof Todo>;
 

@@ -59,6 +59,23 @@ export function todayDate(timezone?: string, locale = 'en'): string {
   });
 }
 
+export function maxDate(
+  date1: string,
+  date2: string | null,
+  timezone?: string
+) {
+  if (!date2) {
+    return date1;
+  }
+  return DateTime.fromMillis(
+    Math.max(
+      DateTime.fromISO(date1, { zone: timezone }).toMillis(),
+      DateTime.fromISO(date2, { zone: timezone }).toMillis()
+    ),
+    { zone: timezone }
+  ).toISO();
+}
+
 export function formatTimeAgo(
   date: string,
   locale = 'en',
