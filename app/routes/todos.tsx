@@ -202,7 +202,7 @@ const TaskItem = memo(
             onChange={({ currentTarget: { checked } }) =>
               onToggleChecked(checked)
             }
-            aria-label={title || 'A new task'}
+            title={title || 'A new task'}
           />
         </div>
         <div className="ml-3 flex flex-grow items-center h-10">
