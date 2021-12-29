@@ -7,9 +7,6 @@
     "dev": "cross-env NODE_ENV=development run-p dev:*",
     "dev:start": "node -r dotenv/config node_modules/.bin/remix dev",
     "dev:css": "tailwindcss -o ./app/styles/tailwind.css --watch",
-    "cf": "cross-env NODE_ENV=development run-p cf:dev:*",
-    "cf:dev:remix": "remix watch",
-    "cf:dev:wrangler": "wrangler pages dev ./public --watch ./netlify/functions/server/build",
     "build": "cross-env NODE_ENV=production run-s build:*",
     "build:clean": "del .cache netlify/functions/server/build public/build app/styles",
     "build:css": "tailwindcss -o ./app/styles/tailwind.css",
@@ -26,12 +23,12 @@
     "@netlify/functions": "^0.10.0",
     "@reach/menu-button": "^0.16.2",
     "@reach/skip-nav": "^0.16.0",
-    "@remix-run/cloudflare-pages": "^1.1.1",
     "@remix-run/netlify": "^1.1.1",
     "@remix-run/react": "^1.1.1",
     "@remix-run/serve": "^1.1.1",
     "@supabase/supabase-js": "^1.29.1",
     "@vvo/tzdb": "^6.40.0",
+    "clsx": "^1.1.1",
     "is-hotkey": "^0.2.0",
     "luxon": "^2.2.0",
     "react": "^17.0.2",
@@ -45,7 +42,6 @@
   },
   "devDependencies": {
     "@axe-core/react": "^4.3.2",
-    "@cloudflare/workers-types": "^3.3.0",
     "@remix-run/dev": "^1.1.1",
     "@size-limit/preset-app": "^7.0.5",
     "@types/is-hotkey": "^0.1.7",
@@ -57,7 +53,6 @@
     "cross-env": "^7.0.3",
     "del-cli": "^4.0.1",
     "dotenv": "^10.0.0",
-    "esbuild": "0.13.14",
     "eslint": "^8.5.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-typestrict": "^1.0.2",
@@ -67,14 +62,12 @@
     "prettier": "^2.5.1",
     "size-limit": "^7.0.5",
     "tailwindcss": "^3.0.8",
-    "typescript": "^4.1.2",
-    "wrangler": "alpha"
+    "typescript": "^4.1.2"
   },
   "engines": {
     "node": ">=16"
   },
   "sideEffects": false,
-  "main": "dist/worker.js",
   "size-limit": [
     {
       "path": "public/build/**/*.js"

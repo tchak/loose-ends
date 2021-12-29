@@ -2,9 +2,8 @@ import { z } from 'zod';
 import { createClient, PostgrestSingleResponse } from '@supabase/supabase-js';
 import { notFound, unprocessableEntity, badRequest } from 'remix-utils';
 import { json, redirect } from 'remix';
-import sortOn from 'sort-on';
 
-import { now, isToday, startOfDay, isPresent, getEnv } from '~/utils';
+import { now, startOfDay, isPresent, getEnv } from '~/utils';
 
 const supabase = createClient(getEnv('SUPABASE_URL'), getEnv('SUPABASE_KEY'));
 
@@ -48,7 +47,7 @@ const DeleteAccountCommand = z.object({
   command: z.literal(DeleteAccount),
 });
 
-const TodoDTO = z.object({
+const TodoEntity = z.object({
   id: z.string().uuid(),
   title: z.string(),
   user_id: z.string(),
@@ -56,7 +55,7 @@ const TodoDTO = z.object({
   checked_at: z.string().nullable(),
   pinned_at: z.string().nullable(),
 });
-type TodoDTO = z.infer<typeof TodoDTO>;
+type TodoEntity = z.infer<typeof TodoEntity>;
 
 const Command = z.union([
   TodoCreateCommand,
@@ -68,19 +67,22 @@ const Command = z.union([
 ]);
 type Command = z.infer<typeof Command>;
 
-function toJSON(todo: TodoDTO): Todo {
+function toJSON(todo: TodoEntity): Todo {
   return {
     id: todo.id,
     title: todo.title,
-    checked: todo.checked_at != null,
     createdAt: todo.created_at,
+    checkedAt: todo.checked_at,
     pinnedAt: todo.pinned_at,
   };
 }
 
+function todosTable() {
+  return supabase.from<TodoEntity>('todos');
+}
+
 function createTodo({ userId, title }: { userId: string; title: string }) {
-  return supabase
-    .from<TodoDTO>('todos')
+  return todosTable()
     .insert({ title, user_id: userId })
     .select('id')
     .single()
@@ -88,8 +90,7 @@ function createTodo({ userId, title }: { userId: string; title: string }) {
 }
 
 function deleteTodo({ userId, id }: { userId: string; id: string }) {
-  return supabase
-    .from<TodoDTO>('todos')
+  return todosTable()
     .delete()
     .eq('id', id)
     .eq('user_id', userId)
@@ -107,8 +108,7 @@ function setTodoChecked({
   id: string;
   checked: boolean;
 }) {
-  return supabase
-    .from<TodoDTO>('todos')
+  return todosTable()
     .update({ checked_at: checked ? now() : null })
     .eq('id', id)
     .eq('user_id', userId)
@@ -118,8 +118,7 @@ function setTodoChecked({
 }
 
 function setTodoPinned({ userId, id }: { userId: string; id: string }) {
-  return supabase
-    .from<TodoDTO>('todos')
+  return todosTable()
     .update({ pinned_at: now() })
     .eq('id', id)
     .eq('user_id', userId)
@@ -137,8 +136,7 @@ function setTodoTitle({
   id: string;
   title: string;
 }) {
-  return supabase
-    .from<TodoDTO>('todos')
+  return todosTable()
     .update({ title })
     .eq('id', id)
     .eq('user_id', userId)
@@ -148,8 +146,7 @@ function setTodoTitle({
 }
 
 function deleteAccount({ userId }: { userId: string }) {
-  return supabase
-    .from<TodoDTO>('todos')
+  return todosTable()
     .delete()
     .eq('user_id', userId)
     .then(() => redirect('/signout'));
@@ -163,27 +160,17 @@ export async function getTodos({
   timezone?: string;
 }): Promise<{
   todos: Todo[];
-  looseEnds: Todo[];
   timezone?: string;
 }> {
-  const { data: todos } = await supabase
-    .from<TodoDTO>('todos')
+  const { data: todos } = await todosTable()
     .select('id,title,created_at,checked_at,pinned_at')
     .eq('user_id', userId)
-    .or(`checked_at.gte.${startOfDay()},checked_at.is.null`);
+    .or(`checked_at.gte.${startOfDay(timezone)},checked_at.is.null`);
 
   if (todos) {
-    return {
-      todos: sortOn(todos, ['-checked_at', 'pinned_at', '-created_at'])
-        .filter((task) => isRelevantToday(task, timezone))
-        .map(toJSON),
-      looseEnds: sortOn(todos, ['-checked_at', 'pinned_at', 'created_at'])
-        .filter((task) => isLooseEnd(task, timezone))
-        .map(toJSON),
-      timezone,
-    };
+    return { todos: todos.map(toJSON), timezone };
   }
-  return { todos: [], looseEnds: [] };
+  return { todos: [], timezone };
 }
 
 export type Stats = {
@@ -203,8 +190,7 @@ export async function getStats({
     focused: Stats['focused']['scope'];
   };
 }): Promise<Stats> {
-  const { data: tasks } = await supabase
-    .from<TodoDTO>('todos')
+  const { data: tasks } = await todosTable()
     .select('checked_at')
     .eq('user_id', userId)
     .not('checked_at', 'is', null);
@@ -238,7 +224,7 @@ export async function getStats({
 
 function handleSingleError(
   command: CommandName
-): ({ data, error }: PostgrestSingleResponse<TodoDTO>) => Response {
+): ({ data, error }: PostgrestSingleResponse<TodoEntity>) => Response {
   return ({ data, error }) => {
     if (data) {
       return json<CommandData>({ data: { id: data.id }, command });
@@ -287,26 +273,4 @@ export async function executeCommand(
     error: command.error.message,
     command: 'Unknown',
   });
-}
-
-function isRelevantToday(todo: TodoDTO, timezone?: string): boolean {
-  return (
-    isToday(todo.created_at, timezone) ||
-    (isPinned(todo, timezone) && isUncheckedOrCheckedToday(todo, timezone))
-  );
-}
-
-function isLooseEnd(todo: TodoDTO, timezone?: string): boolean {
-  return (
-    !isRelevantToday(todo, timezone) &&
-    isUncheckedOrCheckedToday(todo, timezone)
-  );
-}
-
-function isUncheckedOrCheckedToday(todo: TodoDTO, timezone?: string): boolean {
-  return !todo.checked_at || isToday(todo.checked_at, timezone);
-}
-
-function isPinned(todo: TodoDTO, timezone?: string): boolean {
-  return !!todo.pinned_at && isToday(todo.pinned_at, timezone);
 }

@@ -10,9 +10,10 @@ export const DeleteAccount = 'DeleteAccount' as const;
 export const Todo = z.object({
   id: z.string().uuid(),
   title: z.string(),
-  checked: z.boolean(),
   createdAt: z.string(),
+  checkedAt: z.string().nullable(),
   pinnedAt: z.string().nullable(),
+  hidden: z.boolean().nullish(),
 });
 export type Todo = z.infer<typeof Todo>;
 

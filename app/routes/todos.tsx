@@ -1,5 +1,5 @@
 import type { LoaderFunction, ActionFunction, MetaFunction } from 'remix';
-import { useLoaderData, useFetcher } from 'remix';
+import { useLoaderData, useFetcher, useFetchers } from 'remix';
 import {
   useEffect,
   useState,
@@ -18,6 +18,7 @@ import {
 import { useDebouncedCallback } from 'use-debounce';
 import { Menu, MenuButton, MenuList, MenuItem } from '@reach/menu-button';
 import { SkipNavContent } from '@reach/skip-nav';
+import sortOn from 'sort-on';
 
 import type { Todo, CommandData, CommandError, CommandResult } from '~/types';
 import {
@@ -33,13 +34,14 @@ import {
   isBackspaceKey,
   isEnterKey,
   isEscapeKey,
-  classNames,
   cursorAtStart,
   cursorAtEnd,
   todayDate,
   maxDate,
   isPresent,
   formatTimeAgo,
+  isToday,
+  now,
 } from '~/utils';
 import { authenticator } from '~/auth.server';
 
@@ -62,10 +64,16 @@ export const action: ActionFunction = async ({ request }) => {
 
 export const meta: MetaFunction = () => ({ title: 'Loose Ends' });
 
-type LoaderData = { todos: Todo[]; looseEnds: Todo[]; timezone?: string };
+type LoaderData = { todos: Todo[]; timezone?: string };
 
 export default function TodosRoute() {
-  const { todos, looseEnds, timezone } = useLoaderData<LoaderData>();
+  const {
+    onDeckTodos,
+    onDeckTodosCount,
+    looseEndTodos,
+    looseEndTodosCount,
+    timezone,
+  } = useRouteData();
   const [currentTodoId, setCurrentTodoId] = useState<string | null>(null);
   const editable = useCallback(
     (id: string) => ({
@@ -99,27 +107,27 @@ export default function TodosRoute() {
             onClick={onCreate}
           >
             <PlusIcon className="h-5 w-5" aria-hidden="true" />
-            <span className="sr-only">Add New Task</span>
+            <span className="sr-only">Add a new Task</span>
           </button>
         </div>
       </div>
 
       <SkipNavContent />
 
-      {isPresent(todos) ? (
+      {onDeckTodosCount > 0 ? (
         <ul role="list" className="doodle-border text-base md:text-xl">
-          {todos.map((todo) => (
-            <TaskItem
+          {onDeckTodos.map((todo) => (
+            <TodoItem
               key={todo.id}
+              todo={todo}
               onCreate={onCreate}
               {...editable(todo.id)}
-              {...todo}
             />
           ))}
         </ul>
       ) : null}
 
-      {isPresent(looseEnds) ? (
+      {looseEndTodosCount > 0 ? (
         <>
           <div className="flex items-center px-0 py-6">
             <h2 className="flex-grow">
@@ -130,12 +138,12 @@ export default function TodosRoute() {
           </div>
 
           <ul role="list" className="doodle-border text-base md:text-xl">
-            {looseEnds.map((todo) => (
-              <TaskItem
+            {looseEndTodos.map((todo) => (
+              <TodoItem
                 key={todo.id}
+                todo={todo}
                 timezone={timezone}
                 {...editable(todo.id)}
-                {...todo}
               />
             ))}
           </ul>
@@ -145,39 +153,32 @@ export default function TodosRoute() {
   );
 }
 
-const TaskItem = memo(
+const TodoItem = memo(
   ({
-    id,
-    title,
-    checked,
-    createdAt,
-    pinnedAt,
+    todo,
     timezone,
     onCreate,
     isEditing,
     setEditing,
-  }: Todo & {
+  }: {
+    todo: Todo;
     timezone?: string;
     onCreate?: () => void;
     isEditing: boolean;
     setEditing: (isEditing: boolean) => void;
   }) => {
     const focusRef = useRef<HTMLInputElement>(null);
-    const { fetcher, command } = useCommand();
+    const { command } = useCommand();
 
     const onSetTitle = useDebouncedCallback(
-      (title: string) => command(TodoSetTitle, { id, title }),
+      (title: string) => command(TodoSetTitle, { id: todo.id, title }),
       400
     );
-    const onDelete = () => command(TodoDelete, { id });
-    const onPin = () => command(TodoSetPinned, { id });
+    const onDelete = () => command(TodoDelete, { id: todo.id });
+    const onPin = () => command(TodoSetPinned, { id: todo.id });
     const onToggleChecked = (checked: boolean) =>
-      command(TodoSetChecked, { id, checked: String(checked) });
+      command(TodoSetChecked, { id: todo.id, checked: String(checked) });
     const onEdit = () => setEditing(true);
-
-    const isDeleted =
-      (fetcher.type == 'actionSubmission' || fetcher.type == 'actionReload') &&
-      fetcher.submission.formData.get('command') == TodoDelete;
 
     useEffect(() => {
       if (isEditing) {
@@ -187,22 +188,21 @@ const TaskItem = memo(
       }
     }, [isEditing]);
 
+    if (todo.hidden) {
+      return <li className="hidden">{todo.title}</li>;
+    }
+
     return (
-      <li
-        className={classNames(
-          'relative flex items-center px-4 py-2 md:py-4',
-          isDeleted ? 'hidden' : ''
-        )}
-      >
+      <li className="relative flex items-center px-4 py-2 md:py-4">
         <div className="flex items-center h-10">
           <input
             type="checkbox"
             className="rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
-            defaultChecked={checked}
+            defaultChecked={!!todo.checkedAt}
             onChange={({ currentTarget: { checked } }) =>
               onToggleChecked(checked)
             }
-            title={title || 'A new task'}
+            aria-label={todo.title || 'A new task'}
           />
         </div>
         <div className="ml-3 flex flex-grow items-center h-10">
@@ -211,7 +211,7 @@ const TaskItem = memo(
               ref={focusRef}
               className="w-full h-full focus:outline-none"
               type="text"
-              defaultValue={title}
+              defaultValue={todo.title}
               onChange={({ currentTarget: { value } }) => onSetTitle(value)}
               onBlur={() => setEditing(false)}
               onKeyDown={({ nativeEvent, currentTarget }) => {
@@ -239,13 +239,16 @@ const TaskItem = memo(
               className="w-full flex items-center ml-2"
               onDoubleClick={() => setEditing(true)}
             >
-              {title}
+              {todo.title}
               {!onCreate ? (
                 <>
                   {' '}
                   <span className="text-xs">
                     {nbsp(
-                      formatTimeAgo(maxDate(createdAt, pinnedAt), timezone)
+                      formatTimeAgo(
+                        maxDate(todo.createdAt, todo.pinnedAt),
+                        timezone
+                      )
                     )}
                   </span>
                 </>
@@ -254,8 +257,8 @@ const TaskItem = memo(
           )}
         </div>
         <div className="ml-3 flex items-center">
-          <TaskMenu
-            id={id}
+          <TodoMenu
+            id={todo.id}
             onDelete={onDelete}
             onEdit={onEdit}
             onPin={onCreate ? undefined : onPin}
@@ -299,7 +302,7 @@ function useCommand(options?: {
   return { fetcher, command };
 }
 
-function TaskMenuItem({
+function TodoMenuItem({
   children,
   onClick,
 }: {
@@ -310,7 +313,7 @@ function TaskMenuItem({
     <MenuItem onSelect={onClick} className="doodle rounded-md">
       <button
         type="button"
-        className={classNames('group flex items-center p-1 w-full')}
+        className="group flex items-center p-1 w-full"
         onClick={onClick}
       >
         {children}
@@ -319,7 +322,7 @@ function TaskMenuItem({
   );
 }
 
-function TaskMenu({
+function TodoMenu({
   id,
   onDelete,
   onEdit,
@@ -337,33 +340,136 @@ function TaskMenu({
         className="rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
       >
         <DotsVerticalIcon className="h-5 w-5" aria-hidden="true" />
-        <span className="sr-only">Task Menu</span>
+        <span className="sr-only">Todo Menu</span>
       </MenuButton>
       <MenuList className="">
-        <TaskMenuItem onClick={onEdit}>
+        <TodoMenuItem onClick={onEdit}>
           <PencilAltIcon
             className="mr-3 h-5 w-5 group-hover:text-gray-500"
             aria-hidden="true"
           />
           Edit
-        </TaskMenuItem>
+        </TodoMenuItem>
         {onPin ? (
-          <TaskMenuItem onClick={onPin}>
+          <TodoMenuItem onClick={onPin}>
             <StarIcon
               className="mr-3 h-5 w-5 group-hover:text-gray-500"
               aria-hidden="true"
             />
             Pin
-          </TaskMenuItem>
+          </TodoMenuItem>
         ) : null}
-        <TaskMenuItem onClick={onDelete}>
+        <TodoMenuItem onClick={onDelete}>
           <TrashIcon
             className="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500"
             aria-hidden="true"
           />
           Delete
-        </TaskMenuItem>
+        </TodoMenuItem>
       </MenuList>
     </Menu>
   );
+}
+
+function useRouteData() {
+  const fetchers = useFetchers();
+  const inflight = fetchers
+    .filter(({ type, submission }) => {
+      if (type == 'actionSubmission' || type == 'actionReload') {
+        switch (submission?.formData.get('command')) {
+          case TodoSetChecked:
+          case TodoSetPinned:
+          case TodoDelete:
+          case TodoSetTitle:
+            return true;
+        }
+      }
+      return false;
+    })
+    .map(({ submission }) => submission?.formData)
+    .filter(isPresent);
+  const { todos, timezone } = useLoaderData<LoaderData>();
+  const onDeckTodos = onDeckForToday(todos, inflight, timezone);
+  const looseEndTodos = looseEndsForToday(todos, inflight, timezone);
+
+  return {
+    timezone,
+    onDeckTodos,
+    onDeckTodosCount: onDeckTodos.filter(({ hidden }) => !hidden).length,
+    looseEndTodos,
+    looseEndTodosCount: looseEndTodos.filter(({ hidden }) => !hidden).length,
+  };
+}
+
+function onDeckForToday(
+  todos: Todo[],
+  inflight: FormData[],
+  timezone?: string
+): Todo[] {
+  return sortOn(
+    todos.map((todo) => withInflight(todo, inflight)),
+    ['-checkedAt', 'pinnedAt', '-createdAt']
+  ).map((todo) => {
+    if (!todo.hidden) {
+      return { ...todo, hidden: !isRelevantToday(todo, timezone) };
+    }
+    return todo;
+  });
+}
+
+function looseEndsForToday(
+  todos: Todo[],
+  inflight: FormData[],
+  timezone?: string
+): Todo[] {
+  return sortOn(
+    todos.map((todo) => withInflight(todo, inflight)),
+    ['-checkedAt', 'pinnedAt', 'createdAt']
+  ).map((todo) => {
+    if (!todo.hidden) {
+      return { ...todo, hidden: !isLooseEnd(todo, timezone) };
+    }
+    return todo;
+  });
+}
+
+function withInflight(todo: Todo, inflight: FormData[]): Todo {
+  const formData = inflight.find((formData) => formData.get('id') == todo.id);
+  switch (formData?.get('command')) {
+    case TodoSetTitle:
+      return { ...todo, title: String(formData.get('title')) ?? todo.title };
+    case TodoSetChecked:
+      if (formData?.get('checked')) {
+        return { ...todo, checkedAt: now() };
+      }
+      return { ...todo, checkedAt: null };
+    case TodoSetPinned:
+      return { ...todo, pinnedAt: now() };
+    case TodoDelete:
+      return { ...todo, hidden: true };
+    default:
+      return todo;
+  }
+}
+
+function isRelevantToday(todo: Todo, timezone?: string): boolean {
+  return (
+    isToday(todo.createdAt, timezone) ||
+    (isPinned(todo, timezone) && isUncheckedOrCheckedToday(todo, timezone))
+  );
+}
+
+function isLooseEnd(todo: Todo, timezone?: string): boolean {
+  return (
+    !isRelevantToday(todo, timezone) &&
+    isUncheckedOrCheckedToday(todo, timezone)
+  );
+}
+
+function isUncheckedOrCheckedToday(todo: Todo, timezone?: string): boolean {
+  return !todo.checkedAt || isToday(todo.checkedAt, timezone);
+}
+
+function isPinned(todo: Todo, timezone?: string): boolean {
+  return !!todo.pinnedAt && isToday(todo.pinnedAt, timezone);
 }

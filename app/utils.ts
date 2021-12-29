@@ -21,10 +21,6 @@ export function cursorAtEnd(input: HTMLInputElement): boolean {
   return cursorPosition(input) == input.value.length;
 }
 
-export function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
-
 export function nbsp(str: string) {
   return str.replace(/\s/g, '\xa0');
 }

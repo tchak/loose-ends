@@ -112,4 +112,3 @@ build/
 public/build/
 app/styles/
 netlify/functions/server/build/
-/wrangler.toml

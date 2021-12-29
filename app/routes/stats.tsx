@@ -4,9 +4,9 @@ import { Duration } from 'luxon';
 import { MenuIcon } from '@heroicons/react/solid';
 import { z } from 'zod';
 import { SkipNavContent } from '@reach/skip-nav';
+import clsx from 'clsx';
 
 import { authenticator } from '~/auth.server';
-import { classNames } from '~/utils';
 import { getStats, Stats } from '~/db.server';
 
 const Scopes = z.object({
@@ -74,8 +74,8 @@ export default function StatsRoute() {
         <div className="flex text-sm justify-end mt-4">
           <Link
             to={pathWithFilter('stats', 'overall')}
-            className={classNames(
-              stats.scope == 'overall' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': stats.scope == 'overall' },
               'border rounded-md hover:bg-slate-300'
             )}
           >
@@ -83,8 +83,8 @@ export default function StatsRoute() {
           </Link>
           <Link
             to={pathWithFilter('stats', 'today')}
-            className={classNames(
-              stats.scope == 'today' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': stats.scope == 'today' },
               'border ml-2 rounded-md hover:bg-slate-300'
             )}
           >
@@ -98,8 +98,8 @@ export default function StatsRoute() {
         <div className="flex text-sm justify-end mt-4">
           <Link
             to={pathWithFilter('done', 'week')}
-            className={classNames(
-              done.scope == 'week' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': done.scope == 'week' },
               'border rounded-md hover:bg-slate-300'
             )}
           >
@@ -107,8 +107,8 @@ export default function StatsRoute() {
           </Link>
           <Link
             to={pathWithFilter('done', 'month')}
-            className={classNames(
-              done.scope == 'month' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': done.scope == 'month' },
               'border ml-2 rounded-md hover:bg-slate-300'
             )}
           >
@@ -116,8 +116,8 @@ export default function StatsRoute() {
           </Link>
           <Link
             to={pathWithFilter('done', 'year')}
-            className={classNames(
-              done.scope == 'year' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': done.scope == 'year' },
               'border ml-2 rounded-md hover:bg-slate-300'
             )}
           >
@@ -131,8 +131,8 @@ export default function StatsRoute() {
         <div className="flex text-sm justify-end mt-4">
           <Link
             to={pathWithFilter('focused', 'week')}
-            className={classNames(
-              focused.scope == 'week' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': focused.scope == 'week' },
               'border rounded-md '
             )}
           >
@@ -140,8 +140,8 @@ export default function StatsRoute() {
           </Link>
           <Link
             to={pathWithFilter('focused', 'month')}
-            className={classNames(
-              focused.scope == 'month' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': focused.scope == 'month' },
               'border ml-2 rounded-md hover:bg-slate-300'
             )}
           >
@@ -149,8 +149,8 @@ export default function StatsRoute() {
           </Link>
           <Link
             to={pathWithFilter('focused', 'year')}
-            className={classNames(
-              focused.scope == 'year' ? 'bg-slate-300' : '',
+            className={clsx(
+              { 'bg-slate-300': focused.scope == 'year' },
               'border ml-2 rounded-md hover:bg-slate-300'
             )}
           >
