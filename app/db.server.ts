@@ -15,37 +15,11 @@ import {
   TodoSetPinned,
   DeleteAccount,
   Todo,
-  booleanFromString,
+  Command,
   CommandName,
   CommandError,
   CommandData,
-} from '~/types';
-
-const TodoCreateCommand = z.object({
-  command: z.literal(TodoCreate),
-  title: z.string().optional(),
-});
-const TodoDeleteCommand = z.object({
-  command: z.literal(TodoDelete),
-  id: z.string().uuid(),
-});
-const TodoSetCheckedCommand = z.object({
-  command: z.literal(TodoSetChecked),
-  id: z.string().uuid(),
-  checked: booleanFromString(),
-});
-const TodoSetPinnedCommand = z.object({
-  command: z.literal(TodoSetPinned),
-  id: z.string().uuid(),
-});
-const TodoSetTitleCommand = z.object({
-  command: z.literal(TodoSetTitle),
-  id: z.string().uuid(),
-  title: z.string(),
-});
-const DeleteAccountCommand = z.object({
-  command: z.literal(DeleteAccount),
-});
+} from '~/models/todos';
 
 const TodoEntity = z.object({
   id: z.string().uuid(),
@@ -56,16 +30,6 @@ const TodoEntity = z.object({
   pinned_at: z.string().nullable(),
 });
 type TodoEntity = z.infer<typeof TodoEntity>;
-
-const Command = z.union([
-  TodoCreateCommand,
-  TodoDeleteCommand,
-  TodoSetCheckedCommand,
-  TodoSetTitleCommand,
-  TodoSetPinnedCommand,
-  DeleteAccountCommand,
-]);
-type Command = z.infer<typeof Command>;
 
 function toJSON(todo: TodoEntity): Todo {
   return {

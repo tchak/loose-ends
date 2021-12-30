@@ -1,9 +1,13 @@
+import { z } from 'zod';
 import { DateTime } from 'luxon';
 import { isHotkey } from 'is-hotkey';
 
 export const isEnterKey = isHotkey('enter');
 export const isBackspaceKey = isHotkey('backspace');
 export const isEscapeKey = isHotkey('escape');
+
+export const booleanFromString = () =>
+  z.enum(['true', 'false']).transform((checked) => checked == 'true');
 
 function cursorPosition(input: HTMLInputElement): number {
   return (

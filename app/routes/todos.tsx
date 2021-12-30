@@ -1,5 +1,4 @@
 import type { LoaderFunction, ActionFunction, MetaFunction } from 'remix';
-import { useLoaderData, useFetcher, useFetchers } from 'remix';
 import {
   useEffect,
   useState,
@@ -18,17 +17,17 @@ import {
 import { useDebouncedCallback } from 'use-debounce';
 import { Menu, MenuButton, MenuList, MenuItem } from '@reach/menu-button';
 import { SkipNavContent } from '@reach/skip-nav';
-import sortOn from 'sort-on';
 
-import type { Todo, CommandData, CommandError, CommandResult } from '~/types';
 import {
+  Todo,
   TodoCreate,
   TodoDelete,
   TodoSetPinned,
   TodoSetChecked,
   TodoSetTitle,
-} from '~/types';
-import { getTodos, executeCommand } from '~/db.server';
+  LoaderData,
+} from '~/models/todos';
+import { useRouteData, useCommand } from '~/hooks/todos';
 import {
   nbsp,
   isBackspaceKey,
@@ -38,11 +37,9 @@ import {
   cursorAtEnd,
   todayDate,
   maxDate,
-  isPresent,
   formatTimeAgo,
-  isToday,
-  now,
 } from '~/utils';
+import { getTodos, executeCommand } from '~/db.server';
 import { authenticator } from '~/auth.server';
 
 export const loader: LoaderFunction = async ({
@@ -63,8 +60,6 @@ export const action: ActionFunction = async ({ request }) => {
 };
 
 export const meta: MetaFunction = () => ({ title: 'Loose Ends' });
-
-type LoaderData = { todos: Todo[]; timezone?: string };
 
 export default function TodosRoute() {
   const {
@@ -119,8 +114,8 @@ export default function TodosRoute() {
           {onDeckTodos.map((todo) => (
             <TodoItem
               key={todo.id}
-              todo={todo}
               onCreate={onCreate}
+              {...todo}
               {...editable(todo.id)}
             />
           ))}
@@ -141,8 +136,8 @@ export default function TodosRoute() {
             {looseEndTodos.map((todo) => (
               <TodoItem
                 key={todo.id}
-                todo={todo}
                 timezone={timezone}
+                {...todo}
                 {...editable(todo.id)}
               />
             ))}
@@ -155,13 +150,17 @@ export default function TodosRoute() {
 
 const TodoItem = memo(
   ({
-    todo,
+    id,
+    title,
+    createdAt,
+    pinnedAt,
+    checkedAt,
+    hidden,
     timezone,
     onCreate,
     isEditing,
     setEditing,
-  }: {
-    todo: Todo;
+  }: Todo & {
     timezone?: string;
     onCreate?: () => void;
     isEditing: boolean;
@@ -171,13 +170,13 @@ const TodoItem = memo(
     const { command } = useCommand();
 
     const onSetTitle = useDebouncedCallback(
-      (title: string) => command(TodoSetTitle, { id: todo.id, title }),
+      (title: string) => command(TodoSetTitle, { id, title }),
       400
     );
-    const onDelete = () => command(TodoDelete, { id: todo.id });
-    const onPin = () => command(TodoSetPinned, { id: todo.id });
+    const onDelete = () => command(TodoDelete, { id });
+    const onPin = () => command(TodoSetPinned, { id });
     const onToggleChecked = (checked: boolean) =>
-      command(TodoSetChecked, { id: todo.id, checked: String(checked) });
+      command(TodoSetChecked, { id, checked: String(checked) });
     const onEdit = () => setEditing(true);
 
     useEffect(() => {
@@ -188,8 +187,8 @@ const TodoItem = memo(
       }
     }, [isEditing]);
 
-    if (todo.hidden) {
-      return <li className="hidden">{todo.title}</li>;
+    if (hidden) {
+      return <li className="hidden">{title}</li>;
     }
 
     return (
@@ -198,11 +197,11 @@ const TodoItem = memo(
           <input
             type="checkbox"
             className="rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
-            defaultChecked={!!todo.checkedAt}
+            defaultChecked={!!checkedAt}
             onChange={({ currentTarget: { checked } }) =>
               onToggleChecked(checked)
             }
-            aria-label={todo.title || 'A new task'}
+            aria-label={title || 'A new task'}
           />
         </div>
         <div className="ml-3 flex flex-grow items-center h-10">
@@ -211,7 +210,7 @@ const TodoItem = memo(
               ref={focusRef}
               className="w-full h-full focus:outline-none"
               type="text"
-              defaultValue={todo.title}
+              defaultValue={title}
               onChange={({ currentTarget: { value } }) => onSetTitle(value)}
               onBlur={() => setEditing(false)}
               onKeyDown={({ nativeEvent, currentTarget }) => {
@@ -239,26 +238,19 @@ const TodoItem = memo(
               className="w-full flex items-center ml-2"
               onDoubleClick={() => setEditing(true)}
             >
-              {todo.title}
-              {!onCreate ? (
-                <>
+              {title}
+              {onCreate ? null : (
+                <span className="text-xs">
                   {' '}
-                  <span className="text-xs">
-                    {nbsp(
-                      formatTimeAgo(
-                        maxDate(todo.createdAt, todo.pinnedAt),
-                        timezone
-                      )
-                    )}
-                  </span>
-                </>
-              ) : null}
+                  {nbsp(formatTimeAgo(maxDate(createdAt, pinnedAt), timezone))}
+                </span>
+              )}
             </label>
           )}
         </div>
         <div className="ml-3 flex items-center">
           <TodoMenu
-            id={todo.id}
+            id={id}
             onDelete={onDelete}
             onEdit={onEdit}
             onPin={onCreate ? undefined : onPin}
@@ -269,55 +261,18 @@ const TodoItem = memo(
   }
 );
 
-function useCommand(options?: {
-  onSuccess?: (data: CommandData) => void;
-  onError?: (error: CommandError) => void;
-}) {
-  const fetcher = useFetcher<CommandResult>();
-  useEffect(() => {
-    if (fetcher.type == 'done') {
-      if ('data' in fetcher.data && options?.onSuccess) {
-        options.onSuccess(fetcher.data);
-      } else if ('error' in fetcher.data) {
-        console.error(fetcher.data.error);
-        if (options?.onError) {
-          options.onError(fetcher.data);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetcher.type]);
-  const command = useCallback(
-    (command: string, payload?: Record<string, string>) =>
-      fetcher.submit(
-        {
-          command,
-          ...payload,
-        },
-        { method: 'post', replace: true }
-      ),
-    [fetcher]
-  );
-
-  return { fetcher, command };
-}
-
 function TodoMenuItem({
   children,
-  onClick,
+  onSelect,
 }: {
   children: ReactNode;
-  onClick: () => void;
+  onSelect: () => void;
 }) {
   return (
-    <MenuItem onSelect={onClick} className="doodle rounded-md">
-      <button
-        type="button"
-        className="group flex items-center p-1 w-full"
-        onClick={onClick}
-      >
+    <MenuItem onSelect={onSelect} className="doodle rounded-md">
+      <span className="group flex items-center p-1 w-full border">
         {children}
-      </button>
+      </span>
     </MenuItem>
   );
 }
@@ -342,8 +297,8 @@ function TodoMenu({
         <DotsVerticalIcon className="h-5 w-5" aria-hidden="true" />
         <span className="sr-only">Todo Menu</span>
       </MenuButton>
-      <MenuList className="">
-        <TodoMenuItem onClick={onEdit}>
+      <MenuList>
+        <TodoMenuItem onSelect={onEdit}>
           <PencilAltIcon
             className="mr-3 h-5 w-5 group-hover:text-gray-500"
             aria-hidden="true"
@@ -351,7 +306,7 @@ function TodoMenu({
           Edit
         </TodoMenuItem>
         {onPin ? (
-          <TodoMenuItem onClick={onPin}>
+          <TodoMenuItem onSelect={onPin}>
             <StarIcon
               className="mr-3 h-5 w-5 group-hover:text-gray-500"
               aria-hidden="true"
@@ -359,7 +314,7 @@ function TodoMenu({
             Pin
           </TodoMenuItem>
         ) : null}
-        <TodoMenuItem onClick={onDelete}>
+        <TodoMenuItem onSelect={onDelete}>
           <TrashIcon
             className="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500"
             aria-hidden="true"
@@ -369,107 +324,4 @@ function TodoMenu({
       </MenuList>
     </Menu>
   );
-}
-
-function useRouteData() {
-  const fetchers = useFetchers();
-  const inflight = fetchers
-    .filter(({ type, submission }) => {
-      if (type == 'actionSubmission' || type == 'actionReload') {
-        switch (submission?.formData.get('command')) {
-          case TodoSetChecked:
-          case TodoSetPinned:
-          case TodoDelete:
-          case TodoSetTitle:
-            return true;
-        }
-      }
-      return false;
-    })
-    .map(({ submission }) => submission?.formData)
-    .filter(isPresent);
-  const { todos, timezone } = useLoaderData<LoaderData>();
-  const onDeckTodos = onDeckForToday(todos, inflight, timezone);
-  const looseEndTodos = looseEndsForToday(todos, inflight, timezone);
-
-  return {
-    timezone,
-    onDeckTodos,
-    onDeckTodosCount: onDeckTodos.filter(({ hidden }) => !hidden).length,
-    looseEndTodos,
-    looseEndTodosCount: looseEndTodos.filter(({ hidden }) => !hidden).length,
-  };
-}
-
-function onDeckForToday(
-  todos: Todo[],
-  inflight: FormData[],
-  timezone?: string
-): Todo[] {
-  return sortOn(
-    todos.map((todo) => withInflight(todo, inflight)),
-    ['-checkedAt', 'pinnedAt', '-createdAt']
-  ).map((todo) => {
-    if (!todo.hidden) {
-      return { ...todo, hidden: !isRelevantToday(todo, timezone) };
-    }
-    return todo;
-  });
-}
-
-function looseEndsForToday(
-  todos: Todo[],
-  inflight: FormData[],
-  timezone?: string
-): Todo[] {
-  return sortOn(
-    todos.map((todo) => withInflight(todo, inflight)),
-    ['-checkedAt', 'pinnedAt', 'createdAt']
-  ).map((todo) => {
-    if (!todo.hidden) {
-      return { ...todo, hidden: !isLooseEnd(todo, timezone) };
-    }
-    return todo;
-  });
-}
-
-function withInflight(todo: Todo, inflight: FormData[]): Todo {
-  const formData = inflight.find((formData) => formData.get('id') == todo.id);
-  switch (formData?.get('command')) {
-    case TodoSetTitle:
-      return { ...todo, title: String(formData.get('title')) ?? todo.title };
-    case TodoSetChecked:
-      if (formData?.get('checked')) {
-        return { ...todo, checkedAt: now() };
-      }
-      return { ...todo, checkedAt: null };
-    case TodoSetPinned:
-      return { ...todo, pinnedAt: now() };
-    case TodoDelete:
-      return { ...todo, hidden: true };
-    default:
-      return todo;
-  }
-}
-
-function isRelevantToday(todo: Todo, timezone?: string): boolean {
-  return (
-    isToday(todo.createdAt, timezone) ||
-    (isPinned(todo, timezone) && isUncheckedOrCheckedToday(todo, timezone))
-  );
-}
-
-function isLooseEnd(todo: Todo, timezone?: string): boolean {
-  return (
-    !isRelevantToday(todo, timezone) &&
-    isUncheckedOrCheckedToday(todo, timezone)
-  );
-}
-
-function isUncheckedOrCheckedToday(todo: Todo, timezone?: string): boolean {
-  return !todo.checkedAt || isToday(todo.checkedAt, timezone);
-}
-
-function isPinned(todo: Todo, timezone?: string): boolean {
-  return !!todo.pinnedAt && isToday(todo.pinnedAt, timezone);
 }
