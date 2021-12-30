@@ -1,12 +1,5 @@
 import type { LoaderFunction, ActionFunction, MetaFunction } from 'remix';
-import {
-  useEffect,
-  useState,
-  useRef,
-  ReactNode,
-  useCallback,
-  memo,
-} from 'react';
+import { useEffect, useRef, ReactNode, useCallback, memo } from 'react';
 import {
   TrashIcon,
   PencilAltIcon,
@@ -27,7 +20,7 @@ import {
   TodoSetTitle,
   LoaderData,
 } from '~/models/todos';
-import { useRouteData, useCommand } from '~/hooks/todos';
+import { useRouteData, useCommand, useEditable } from '~/hooks/todos';
 import {
   nbsp,
   isBackspaceKey,
@@ -69,19 +62,11 @@ export default function TodosRoute() {
     looseEndTodosCount,
     timezone,
   } = useRouteData();
-  const [currentTodoId, setCurrentTodoId] = useState<string | null>(null);
-  const editable = useCallback(
-    (id: string) => ({
-      isEditing: currentTodoId == id,
-      setEditing: (isEditing: boolean) =>
-        setCurrentTodoId(isEditing ? id : null),
-    }),
-    [currentTodoId]
-  );
-  const { command } = useCommand({
+  const editable = useEditable();
+  const command = useCommand({
     onSuccess: (data) => {
       if (data.command == TodoCreate) {
-        setCurrentTodoId(data.data.id);
+        editable(data.data.id).setEditing(true);
       }
     },
   });
@@ -151,15 +136,11 @@ export default function TodosRoute() {
 const TodoItem = memo(
   ({
     id,
-    title,
-    createdAt,
-    pinnedAt,
-    checkedAt,
-    hidden,
     timezone,
     onCreate,
     isEditing,
     setEditing,
+    ...todo
   }: Todo & {
     timezone?: string;
     onCreate?: () => void;
@@ -167,7 +148,7 @@ const TodoItem = memo(
     setEditing: (isEditing: boolean) => void;
   }) => {
     const focusRef = useRef<HTMLInputElement>(null);
-    const { command } = useCommand();
+    const command = useCommand();
 
     const onSetTitle = useDebouncedCallback(
       (title: string) => command(TodoSetTitle, { id, title }),
@@ -187,8 +168,8 @@ const TodoItem = memo(
       }
     }, [isEditing]);
 
-    if (hidden) {
-      return <li className="hidden">{title}</li>;
+    if (todo.hidden) {
+      return <li className="hidden">{todo.title}</li>;
     }
 
     return (
@@ -197,11 +178,11 @@ const TodoItem = memo(
           <input
             type="checkbox"
             className="rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-gray-500"
-            defaultChecked={!!checkedAt}
+            defaultChecked={!!todo.checkedAt}
             onChange={({ currentTarget: { checked } }) =>
               onToggleChecked(checked)
             }
-            aria-label={title || 'A new task'}
+            aria-label={todo.title || 'A new task'}
           />
         </div>
         <div className="ml-3 flex flex-grow items-center h-10">
@@ -210,7 +191,7 @@ const TodoItem = memo(
               ref={focusRef}
               className="w-full h-full focus:outline-none"
               type="text"
-              defaultValue={title}
+              defaultValue={todo.title}
               onChange={({ currentTarget: { value } }) => onSetTitle(value)}
               onBlur={() => setEditing(false)}
               onKeyDown={({ nativeEvent, currentTarget }) => {
@@ -238,11 +219,16 @@ const TodoItem = memo(
               className="w-full flex items-center ml-2"
               onDoubleClick={() => setEditing(true)}
             >
-              {title}
+              {todo.title}
               {onCreate ? null : (
                 <span className="text-xs">
                   {' '}
-                  {nbsp(formatTimeAgo(maxDate(createdAt, pinnedAt), timezone))}
+                  {nbsp(
+                    formatTimeAgo(
+                      maxDate(todo.createdAt, todo.pinnedAt),
+                      timezone
+                    )
+                  )}
                 </span>
               )}
             </label>

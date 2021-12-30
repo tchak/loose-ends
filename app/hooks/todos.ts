@@ -1,5 +1,5 @@
 import { useLoaderData, useFetcher, useFetchers } from 'remix';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import sortOn from 'sort-on';
 
 import {
@@ -65,7 +65,7 @@ export function useCommand(options?: {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.type]);
-  const command = useCallback(
+  return useCallback(
     (command: string, payload?: Record<string, string>) =>
       fetcher.submit(
         {
@@ -76,8 +76,18 @@ export function useCommand(options?: {
       ),
     [fetcher]
   );
+}
 
-  return { fetcher, command };
+export function useEditable() {
+  const [currentTodoId, setCurrentTodoId] = useState<string | null>(null);
+  return useCallback(
+    (id: string) => ({
+      isEditing: currentTodoId == id,
+      setEditing: (isEditing: boolean) =>
+        setCurrentTodoId(isEditing ? id : null),
+    }),
+    [currentTodoId]
+  );
 }
 
 function onDeckForToday(
