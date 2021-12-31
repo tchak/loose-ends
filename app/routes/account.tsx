@@ -25,6 +25,8 @@ export const action: ActionFunction = async ({ request }) => {
 
 export const meta: MetaFunction = () => ({ title: 'Account' });
 
+export const handle = { hydrate: false };
+
 export default function AccountRoute() {
   const { user } = useLoaderData<{ user: { name: string } }>();
   return (

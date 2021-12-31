@@ -9,6 +9,7 @@ import {
   Link,
   useLoaderData,
   useFetcher,
+  useMatches,
 } from 'remix';
 import type {
   LoaderFunction,
@@ -140,6 +141,8 @@ function Document({
   isAuthenticated?: boolean;
   timezone?: string;
 }) {
+  const matches = useMatches();
+  const includeScripts = matches.at(-1)?.handle?.hydrate != false;
   return (
     <html lang="en">
       <head>
@@ -154,7 +157,7 @@ function Document({
           {children}
         </Layout>
         <ScrollRestoration />
-        <Scripts />
+        {includeScripts ? <Scripts /> : null}
         {process.env.NODE_ENV == 'development' && <LiveReload />}
       </body>
     </html>

@@ -30,6 +30,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export const meta: MetaFunction = () => ({ title: 'Account' });
 
+export const handle = { hydrate: false };
+
 export default function StatsRoute() {
   const [params] = useSearchParams();
   const { stats, done, focused } = useLoaderData<Stats>();
