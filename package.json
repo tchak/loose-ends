@@ -11,10 +11,11 @@
     "build:clean": "del .cache netlify/functions/server/build public/build app/styles",
     "build:css": "tailwindcss -o ./app/styles/tailwind.css",
     "build:remix": "remix build",
-    "build:size": "size-limit",
     "lint": "run-s lint:*",
     "lint:types": "tsc",
     "lint:js": "eslint . --ext .ts,.tsx",
+    "size": "run-s build size-limit",
+    "size-limit" : "size-limit",
     "start": "remix-serve ./netlify/functions/server/build",
     "postinstall": "remix setup node"
   },
