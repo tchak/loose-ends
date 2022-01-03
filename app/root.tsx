@@ -260,3 +260,10 @@ function TimezoneSelect({ timezone }: { timezone: string }) {
     </select>
   );
 }
+
+if (!Array.prototype.at) {
+  Array.prototype.at = function at(index: number) {
+    const k = index >= 0 ? index : this.length + index;
+    return this[k];
+  };
+}
